@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>السوق حالا</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+/* SELLER BOX */
+.seller-box{
+position:absolute;
+bottom:10px;
+right:10px;
+background:rgba(0,0,0,0.6);
+color:white;
+padding:6px 12px;
+border-radius:12px;
+font-size:12px;
+backdrop-filter:blur(6px);
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+<div class="nav-left">
+<div class="logo">السوق حالا</div>
+</div>
+
+<div class="nav-center">
+<input class="search-bar" placeholder="ابحث عن تاجر او سوق معين...">
+</div>
+
+<div class="nav-right">
+<a href="/home.html">الصفحة الرئيسية</a>
+<a href="/admin.html">صفحة التاجر</a>
+<button class="seller-btn">كن بائع</button>
+</div>
+
+</div>
+
+<div class="container">
+
+<h2>البث المباشر للتجار</h2>
+
+<div class="videos" id="videos"></div>
+
+</div>
+
+<script>
+
+async function loadVideos(){
+
+let container=document.getElementById("videos")
+
+try{
+
+let res=await fetch("/videos")
+let videos=await res.json()
+
+container.innerHTML=""
+
+if(videos.length===0){
+container.innerHTML="<p>لا يوجد بث مباشر حالياً</p>"
+return
+}
+
+videos.forEach(video=>{
+
+let data = localStorage.getItem("product_"+video)
+
+let sellerName = "تاجر غير معروف"
+
+if(data){
+let product = JSON.parse(data)
+sellerName = product.seller || "بدون اسم"
+}
+
+let card=document.createElement("div")
+card.className="card"
+
+card.innerHTML=`
+<video muted autoplay loop>
+<source src="videos/${video}" type="video/mp4">
+</video>
+
+<div class="card-info">
+<div class="live">🔴 LIVE</div>
+<div>${video}</div>
+</div>
+
+<div class="seller-box">
+👤 ${sellerName}
+</div>
+`
+
+card.onclick=()=>{
+localStorage.setItem("liveVideo",video)
+window.location.href="/index.html"
+}
+
+container.appendChild(card)
+
+})
+
+}catch(err){
+container.innerHTML="<p>حدث خطأ في تحميل الفيديوهات</p>"
+}
+
+}
+
+loadVideos()
+
+</script>
+
+</body>
+</html>

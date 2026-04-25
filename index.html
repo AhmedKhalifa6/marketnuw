@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>السوق حالا - Live Auction</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+/* ================= PREMIUM AUCTION UI ================= */
+
+.auction-card{
+margin-top:15px;
+padding:18px;
+border-radius:16px;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+box-shadow:0 15px 40px rgba(0,0,0,0.3);
+position:relative;
+overflow:hidden;
+}
+
+.auction-title{
+font-size:14px;
+opacity:0.8;
+margin-bottom:8px;
+}
+
+.auction-price{
+font-size:30px;
+font-weight:bold;
+color:#22c55e;
+transition:0.3s;
+}
+
+.auction-user{
+font-size:13px;
+opacity:0.8;
+margin-top:5px;
+}
+
+.badge-live{
+position:absolute;
+top:12px;
+right:12px;
+background:red;
+padding:4px 10px;
+border-radius:20px;
+font-size:11px;
+font-weight:bold;
+animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+0%{opacity:1}
+50%{opacity:0.4}
+100%{opacity:1}
+}
+
+/* BID BUTTON */
+.bid-btn{
+margin-top:12px;
+width:100%;
+background:#22c55e;
+border:none;
+padding:12px;
+border-radius:12px;
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+.bid-btn:hover{
+background:#16a34a;
+transform:translateY(-2px);
+}
+
+/* BID MODAL */
+#bidBox{
+display:none;
+position:fixed;
+top:30%;
+left:50%;
+transform:translateX(-50%);
+background:white;
+padding:20px;
+border-radius:14px;
+box-shadow:0 20px 60px rgba(0,0,0,0.4);
+width:260px;
+}
+
+#bidBox input{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:10px;
+border:1px solid #ccc;
+}
+
+#bidBox button{
+margin-top:10px;
+width:100%;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+<div class="nav-left">
+<div class="logo">السوق حالا</div>
+</div>
+
+<div class="nav-center">
+<input class="search-bar" placeholder="ابحث داخل البث...">
+</div>
+
+<div class="nav-right">
+<a href="/home.html">البثوث</a>
+<a href="/admin.html">التاجر</a>
+<button class="seller-btn">كن بائع</button>
+</div>
+
+</div>
+
+<div class="video-layout">
+
+<div class="video-area">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<h3>🔴 Live Market</h3>
+<div style="color:red;font-weight:bold;">● LIVE</div>
+</div>
+
+<video id="videoPlayer" controls autoplay></video>
+
+<!-- PRODUCT -->
+<div class="product-box">
+
+<h2 id="productName"></h2>
+
+<div class="price" id="price"></div>
+<div id="weight"></div>
+<p id="description"></p>
+
+<div class="contact">
+<div id="address"></div>
+<div id="phone"></div>
+</div>
+
+<!-- AUCTION PREMIUM -->
+<div class="auction-card">
+
+<div class="badge-live">LIVE AUCTION</div>
+
+<div class="auction-title">أعلى مزايدة حالياً</div>
+
+<div class="auction-price" id="auctionPrice">0</div>
+
+<div class="auction-user">
+👤 <span id="lastBidder">لا يوجد مزايد</span>
+</div>
+
+<button class="bid-btn" onclick="openBid()">زايد الآن 🔥</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- CHAT -->
+<div class="chat">
+
+<h3>💬 الدردشة المباشرة</h3>
+
+<div class="messages" id="messages"></div>
+
+<input id="chatInput" placeholder="اكتب تعليق..." onkeypress="sendMessage(event)">
+
+</div>
+
+</div>
+
+<!-- BID MODAL -->
+<div id="bidBox">
+
+<h3>🔥 المزايدة</h3>
+
+<input id="bidValue" placeholder="اكتب السعر">
+
+<button onclick="sendBid()">تأكيد المزايدة</button>
+<button onclick="closeBid()">إغلاق</button>
+
+</div>
+
+<script>
+
+let videoName = localStorage.getItem("liveVideo")
+
+if(!videoName){
+window.location.href="/home.html"
+}
+
+document.getElementById("videoPlayer").src = "videos/" + videoName
+
+// PRODUCT
+let data = localStorage.getItem("product_" + videoName)
+
+if(data){
+let product = JSON.parse(data)
+
+document.getElementById("productName").innerText = product.name
+document.getElementById("price").innerText = product.price
+document.getElementById("weight").innerText = product.weight
+document.getElementById("description").innerText = product.description
+document.getElementById("address").innerText = product.address
+document.getElementById("phone").innerText = product.phone
+}
+
+// ================= REALTIME CHAT =================
+
+async function loadMessages(){
+
+let res = await fetch("/chat?room=" + videoName)
+let messages = await res.json()
+
+let box = document.getElementById("messages")
+box.innerHTML = ""
+
+messages.forEach(m => {
+let p = document.createElement("p")
+p.innerHTML = `<b>${m.user}:</b> ${m.text}`
+box.appendChild(p)
+})
+
+box.scrollTop = box.scrollHeight
+}
+
+setInterval(loadMessages, 1500)
+loadMessages()
+
+async function sendMessage(e){
+
+if(e.key === "Enter"){
+
+let input = document.getElementById("chatInput")
+
+if(input.value.trim() !== ""){
+
+await fetch("/chat", {
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+room:videoName,
+text:input.value,
+user:"أنت"
+})
+})
+
+input.value=""
+loadMessages()
+
+}
+
+}
+
+}
+
+// ================= AUCTION REALTIME =================
+
+async function loadAuction(){
+
+let res = await fetch("/auction?room=" + videoName)
+let data = await res.json()
+
+let priceEl = document.getElementById("auctionPrice")
+
+// animation عند تغيير السعر
+if(priceEl.innerText != data.price){
+priceEl.style.transform = "scale(1.2)"
+priceEl.style.color = "#facc15"
+
+setTimeout(()=>{
+priceEl.style.transform = "scale(1)"
+priceEl.style.color = "#22c55e"
+},300)
+}
+
+priceEl.innerText = data.price || 0
+document.getElementById("lastBidder").innerText = data.user || "لا يوجد"
+
+}
+
+setInterval(loadAuction, 1000)
+loadAuction()
+
+function openBid(){
+document.getElementById("bidBox").style.display="block"
+}
+
+function closeBid(){
+document.getElementById("bidBox").style.display="none"
+}
+
+async function sendBid(){
+
+let value = document.getElementById("bidValue").value
+
+if(value.trim() !== ""){
+
+await fetch("/auction", {
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+room:videoName,
+price:value,
+user:"أنت"
+})
+})
+
+closeBid()
+loadAuction()
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

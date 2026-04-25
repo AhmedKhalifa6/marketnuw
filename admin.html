@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>لوحة التاجر</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+/* PAGE WRAPPER */
+.admin-container{
+max-width:900px;
+margin:40px auto;
+padding:20px;
+}
+
+/* HEADER */
+.admin-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+/* CARD */
+.admin-card{
+background:white;
+padding:22px;
+border-radius:16px;
+box-shadow:0 10px 30px rgba(0,0,0,0.1);
+margin-bottom:20px;
+}
+
+/* GRID FIX (IMPORTANT) */
+.admin-grid{
+display:grid;
+grid-template-columns:repeat(2, minmax(0, 1fr));
+gap:18px;
+align-items:start;
+}
+
+/* FULL WIDTH ELEMENT */
+.full{
+grid-column:1 / -1;
+}
+
+/* INPUT FIX */
+.admin-card input,
+.admin-card textarea,
+.admin-card select{
+width:100%;
+box-sizing:border-box;
+padding:12px;
+border-radius:10px;
+border:1px solid #cbd5e1;
+margin-top:6px;
+font-size:14px;
+}
+
+/* LABEL */
+.label{
+font-size:13px;
+color:#475569;
+margin-bottom:4px;
+display:block;
+}
+
+/* TEXTAREA */
+.admin-card textarea{
+min-height:100px;
+resize:none;
+}
+
+/* BUTTON */
+.save-btn{
+width:100%;
+margin-top:18px;
+padding:14px;
+border:none;
+border-radius:12px;
+background:#4f46e5;
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:.3s;
+}
+
+.save-btn:hover{
+background:#4338ca;
+transform:translateY(-2px);
+}
+
+/* UPLOAD */
+.upload-box{
+text-align:center;
+padding:25px;
+border:2px dashed #cbd5e1;
+border-radius:14px;
+cursor:pointer;
+transition:.3s;
+}
+
+.upload-box:hover{
+border-color:#6366f1;
+background:#f8fafc;
+}
+
+/* SUCCESS */
+#statusMsg{
+display:none;
+margin-top:10px;
+color:green;
+font-size:13px;
+}
+
+/* MOBILE FIX */
+@media(max-width:700px){
+.admin-grid{
+grid-template-columns:1fr;
+}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+<div class="nav-left"><div class="logo">السوق حالا</div></div>
+<div class="nav-center"><input class="search-bar"></div>
+<div class="nav-right">
+<a href="/home.html">البثوث</a>
+<a href="/admin.html">لوحة التاجر</a>
+</div>
+</div>
+
+<div class="admin-container">
+
+<div class="admin-header">
+<h2>🛠 لوحة التاجر</h2>
+</div>
+
+<!-- PRODUCT -->
+<div class="admin-card">
+
+<h3>📦 بيانات المنتج</h3>
+
+<div class="admin-grid">
+
+<div>
+<label class="label">اختيار الفيديو</label>
+<select id="videoSelect"></select>
+</div>
+
+<div>
+<label class="label">اسم التاجر</label>
+<input id="sellerName">
+</div>
+
+<div>
+<label class="label">اسم المنتج</label>
+<input id="name">
+</div>
+
+<div>
+<label class="label">السعر</label>
+<input id="price">
+</div>
+
+<div>
+<label class="label">الوزن</label>
+<input id="weight">
+</div>
+
+<div class="full">
+<label class="label">الوصف</label>
+<textarea id="description"></textarea>
+</div>
+
+<div>
+<label class="label">العنوان</label>
+<input id="address">
+</div>
+
+<div>
+<label class="label">الهاتف</label>
+<input id="phone">
+</div>
+
+</div>
+
+<button class="save-btn" onclick="saveProduct()">💾 حفظ البيانات</button>
+
+<div id="statusMsg">✔ تم الحفظ</div>
+
+</div>
+
+<!-- UPLOAD -->
+<div class="admin-card">
+
+<h3>🎥 رفع فيديو</h3>
+
+<div class="upload-box" onclick="document.getElementById('videoFile').click()">
+📤 اضغط لاختيار فيديو
+</div>
+
+<input type="file" id="videoFile" style="display:none">
+
+<button class="save-btn" onclick="uploadVideo()">رفع الفيديو</button>
+
+</div>
+
+</div>
+
+<script>
+
+async function loadVideos(){
+
+let res=await fetch("/videos")
+let videos=await res.json()
+
+let select=document.getElementById("videoSelect")
+select.innerHTML=""
+
+videos.forEach(v=>{
+let option=document.createElement("option")
+option.value=v
+option.text=v
+select.appendChild(option)
+})
+
+}
+
+function saveProduct(){
+
+let video=document.getElementById("videoSelect").value
+
+let product={
+seller:document.getElementById("sellerName").value,
+name:document.getElementById("name").value,
+price:document.getElementById("price").value,
+weight:document.getElementById("weight").value,
+description:document.getElementById("description").value,
+address:document.getElementById("address").value,
+phone:document.getElementById("phone").value
+}
+
+localStorage.setItem("product_"+video,JSON.stringify(product))
+
+let msg=document.getElementById("statusMsg")
+msg.style.display="block"
+
+setTimeout(()=>msg.style.display="none",2000)
+
+}
+
+async function uploadVideo(){
+
+let file=document.getElementById("videoFile").files[0]
+
+if(!file) return
+
+let form=new FormData()
+form.append("video",file)
+
+await fetch("/upload",{method:"POST",body:form})
+
+alert("تم الرفع")
+loadVideos()
+
+}
+
+loadVideos()
+
+</script>
+
+</body>
+</html>
